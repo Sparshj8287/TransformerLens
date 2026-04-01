@@ -1325,8 +1325,19 @@ class HookedTransformer(HookedRootModule):
         ) and device in ["cpu", None]:
             logging.warning("float16 models may not work on CPU. Consider using a GPU or bfloat16.")
 
-        # Get the model name used in HuggingFace, rather than the alias.
-        official_model_name = loading.get_official_model_name(model_name)
+        # Support loading directly from local filesystem paths.
+        expanded_model_name = os.path.expanduser(model_name)
+        looks_like_path = (
+            os.path.isabs(model_name)
+            or model_name.startswith("~")
+            or os.path.sep in model_name
+            or (os.path.altsep is not None and os.path.altsep in model_name)
+        )
+        if looks_like_path and os.path.exists(expanded_model_name):
+            official_model_name = expanded_model_name
+        else:
+            # Get the model name used in HuggingFace, rather than the alias.
+            official_model_name = loading.get_official_model_name(model_name)
 
         # Load the config into an HookedTransformerConfig object. If loading from a
         # checkpoint, the config object will contain the information about the
